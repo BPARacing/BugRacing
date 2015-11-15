@@ -1,3 +1,22 @@
+# UNITY IGNORE
+# Ignore everything
+/*
+/*/
+
+# Inverse ignore some stuff
+!/Assets/
+!/ProjectSettings/
+!.gitignore
+
+# OS Stuff
+ehthumbs.db
+Thumbs.db
+$RECYCLE.BIN/
+Desktop.ini
+
+# =========================
+# Operating System Files
+# =========================
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
@@ -16,10 +35,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-
-# =========================
-# Operating System Files
-# =========================
 
 # OSX
 # =========================
