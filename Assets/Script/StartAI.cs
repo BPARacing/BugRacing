@@ -3,38 +3,39 @@ using System.Collections;
 
 public class StartAI : MonoBehaviour {
 
-    public float default_move_speed;
-    public float default_turn_speed;
+    // default behaviors
+    public float default_accel_rate;   // default accel rate
+    public float default_turn_speed;    // default turn speed
+    public float default_max_speed;     // default max speed
+    public float default_wheel_grip;    // min 0 - max 1
+    public bool isPlayer;               // whether or not the car is a player
 
-    public Vector2 exitpoint;
-    public bool isPlayer;
-    private float move_speed;
-    private float turn_speed;
+    private Vector2 exitpoint;          // exitpoint for the AI
+    private float move_speed;           // REAL accel rate
+    private float turn_speed;           // REAL turn speed
+    private float max_speed;            // REAL max speed
 
-    private float axis_horiz = 0f;
-    private float axis_vert = 0f;
-    private GameObject gb;
-    private Quaternion q;
-
-    private Rigidbody2D rb;
-
+    private float axis_horiz = 0f;      // horizontal input
+    private float axis_vert = 0f;       // vertical iput
+    private GameObject exitObj;         // the gameobject of this car
+    private Quaternion quat;            // the quaternion for turning
+    private Rigidbody2D rb;             // this object's rigid body
 
     /// <summary>
     /// Starts this instance.
     /// </summary>
     void Start () {
-        //set the Interanl variables
-        move_speed = default_move_speed;
+        // set the Interanl variables
+        move_speed = default_accel_rate;
         turn_speed = default_turn_speed;
+        max_speed = default_max_speed;
 
-        //set the exit point
+        // set the exit point
         rb = GetComponent<Rigidbody2D>();
 
         // get goal point
-        gb = GameObject.FindGameObjectWithTag("Hazard");
-        exitpoint = new Vector2(gb.transform.position.x, gb.transform.position.y);
-
-        //TODO: Place Car
+        exitObj = GameObject.FindGameObjectWithTag("Exit");
+        exitpoint = new Vector2(exitObj.transform.position.x, exitObj.transform.position.y);
     }
 
     /// <summary>
@@ -67,9 +68,10 @@ public class StartAI : MonoBehaviour {
     /// </summary>
     void angleTowardsGoal()
     {
-        Vector3 vectorToTarget = gb.transform.position - transform.position;
+        Vector3 vectorToTarget = exitObj.transform.position - transform.position;
         float angle = Mathf.Atan2(vectorToTarget.y, vectorToTarget.x) * Mathf.Rad2Deg;
-        q = Quaternion.AngleAxis(angle - 90, Vector3.forward);
+        Debug.Log(transform.gameObject.name +"\nVector is: " + vectorToTarget.ToString() + "\nAngle is:" + angle.ToString());
+        quat = Quaternion.AngleAxis(angle - 90, Vector3.forward);
     }
 
     /// <summary>
@@ -89,7 +91,7 @@ public class StartAI : MonoBehaviour {
             }
             else
             {
-                transform.rotation = Quaternion.Slerp(transform.rotation, q, Time.deltaTime * turn_speed);
+                transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.deltaTime * turn_speed);
             }
         }
     }
@@ -103,6 +105,7 @@ public class StartAI : MonoBehaviour {
         if (col.gameObject.CompareTag("Hazard"))
         {
             this.move_speed = this.move_speed * (float)-1.5;
+            Invoke("return_default_speed",2);
         }
         else if (col.gameObject.CompareTag("Spill"))
         {
@@ -110,8 +113,11 @@ public class StartAI : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// Returns the default speed
+    /// </summary>
     public void return_default_speed()
     {
-        move_speed = default_move_speed;
+        move_speed = default_accel_rate;
     }
 }
