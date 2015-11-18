@@ -1,17 +1,25 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 public class StartAI : MonoBehaviour {
 
     // default behaviors
-    public float default_accel_rate;   // default accel rate
+    public float default_accel_rate;    // default accel rate
     public float default_turn_speed;    // default turn speed
     public float default_max_speed;     // default max speed
-    public float default_wheel_grip;    // min 0 - max 1
+    public float wheel_grip             // wheel grip -min 0  -max 1
+    {
+        get { return this.wheel_grip; }
+        set { Mathf.Clamp(value, 0, 1); }
+    }
+    public float max_wheel_turn;        // maximum wheel angle
+    public float wheel_turn_speed;      // wheel turn speed
     public bool isPlayer;               // whether or not the car is a player
 
     private Vector2 exitpoint;          // exitpoint for the AI
-    private float move_speed;           // REAL accel rate
+    private float accel_rate;           // REAL accel rate
     private float turn_speed;           // REAL turn speed
     private float max_speed;            // REAL max speed
 
@@ -26,7 +34,7 @@ public class StartAI : MonoBehaviour {
     /// </summary>
     void Start () {
         // set the Interanl variables
-        move_speed = default_accel_rate;
+        accel_rate = default_accel_rate;
         turn_speed = default_turn_speed;
         max_speed = default_max_speed;
 
@@ -79,10 +87,54 @@ public class StartAI : MonoBehaviour {
     /// </summary>
     void motion()
     {
-        // move forward
-        if (axis_vert != 0) { rb.AddForce(transform.up * move_speed * axis_vert); }
+        // MOVE the CAR forward
+        // accel_rate, axis_vert, wheel_grip
+        if (axis_vert != 0) { rb.AddForce(transform.up * accel_rate * axis_vert * wheel_grip); }
+
+        // ENFORCE max_speed
+        // max_speed
+        if (rb.velocity.magnitude > max_speed)
+        {
+            rb.velocity = rb.velocity.normalized * max_speed;
+        }
+
+        // get angle
+
+
+        // ROTATE WHEEL
+        Transform wheel = transform.FindChild("Wheel");
+        Debug.Log("Car quat: " + transform.eulerAngles + "\nWheel quat: " + wheel.eulerAngles.ToString());
+        //wheel.Rotate(Vector3.forward, -axis_horiz * wheel_turn_speed * Time.deltaTime);
+        Vector3 angle = wheel.localEulerAngles;
+        //between 0 and 50
+        angle.z = Mathf.Clamp(angle.z + (Time.deltaTime * -axis_horiz * wheel_turn_speed), 0, max_wheel_turn);
+        //between 360 and 310
+
+        //set the angle
+        wheel.localEulerAngles = angle;
+
+        if (Mathf.Abs(wheel.localRotation.z) > 0.5)
+        {
+            //wheel.Rotate(Vector3.forward, new Quaternion(0,0,wheel.localRotation - max_wheel_turn));
+        }
+        /*
+        if (Mathf.Abs(wheel.localRotation.z) > 0.5)
+        {
+            if (wheel.localRotation.z > 0) //if positive then
+            {
+                wheel.rotation = new Quaternion(0,0, max_wheel_turn,0);
+            }
+            else
+            {
+                wheel.rotation = new Quaternion(0, 0, -max_wheel_turn, 0);
+            }
+        }
+        */
+
+        //transform.Rotate(Vector3.forward, -axis_horiz * turn_speed * Time.deltaTime);
 
         // rotate if moving
+        /*
         if (rb.velocity.x != 0  || rb.velocity.y != 0)
         {
             if (isPlayer)
@@ -94,6 +146,7 @@ public class StartAI : MonoBehaviour {
                 transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.deltaTime * turn_speed);
             }
         }
+        */
     }
 
     /// <summary>
@@ -104,12 +157,12 @@ public class StartAI : MonoBehaviour {
     {
         if (col.gameObject.CompareTag("Hazard"))
         {
-            this.move_speed = this.move_speed * (float)-1.5;
+            this.accel_rate = this.accel_rate * (float)-1.5;
             Invoke("return_default_speed",2);
         }
         else if (col.gameObject.CompareTag("Spill"))
         {
-            
+            wheel_grip = 0.3f;
         }
     }
 
@@ -118,6 +171,6 @@ public class StartAI : MonoBehaviour {
     /// </summary>
     public void return_default_speed()
     {
-        move_speed = default_accel_rate;
+        accel_rate = default_accel_rate;
     }
 }
