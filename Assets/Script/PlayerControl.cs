@@ -1,9 +1,8 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
-using System.Collections.Generic;
 
-public class StartAI : MonoBehaviour {
+public class PlayerControl : MonoBehaviour
+{
 
     // default behaviors
     public float default_accel_rate;    // default accel rate
@@ -16,7 +15,6 @@ public class StartAI : MonoBehaviour {
     }
     public float max_wheel_turn;        // maximum wheel angle
     public float wheel_turn_speed;      // wheel turn speed
-    public bool isPlayer;               // whether or not the car is a player
 
     private Vector2 exitpoint;          // exitpoint for the AI
     private float accel_rate;           // REAL accel rate
@@ -34,12 +32,13 @@ public class StartAI : MonoBehaviour {
     /// <summary>
     /// Starts this instance.
     /// </summary>
-    void Start () {
+    void Start()
+    {
         // set the Interanl variables
         accel_rate = default_accel_rate;
         turn_speed = default_turn_speed;
         max_speed = default_max_speed;
-        real_grip = wheel_grip;
+        wheel_grip = 1;
 
         // set the exit point
         rb = GetComponent<Rigidbody2D>();
@@ -52,25 +51,18 @@ public class StartAI : MonoBehaviour {
     /// <summary>
     /// Updates this instance.
     /// </summary>
-    void Update ()
+    void Update()
     {
-        // if player, control
-        if (isPlayer)
-        {
-            axis_horiz = Input.GetAxis("Horizontal");
-            axis_vert = Input.GetAxis("Vertical");
-        }
+        axis_horiz = Input.GetAxis("Horizontal");
+        axis_vert = Input.GetAxis("Vertical");
     }
 
 
     /// <summary>
     /// Fixed Update
     /// </summary>
-    void FixedUpdate () {
-        if (!isPlayer)
-        {
-            angleTowardsGoal();
-        }
+    void FixedUpdate()
+    {
         motion();
     }
 
@@ -81,7 +73,7 @@ public class StartAI : MonoBehaviour {
     {
         Vector3 vectorToTarget = exitObj.transform.position - transform.position;
         float angle = Mathf.Atan2(vectorToTarget.y, vectorToTarget.x) * Mathf.Rad2Deg;
-        Debug.Log(transform.gameObject.name +"\nVector is: " + vectorToTarget.ToString() + "\nAngle is:" + angle.ToString());
+        Debug.Log(transform.gameObject.name + "\nVector is: " + vectorToTarget.ToString() + "\nAngle is:" + angle.ToString());
         quat = Quaternion.AngleAxis(angle - 90, Vector3.forward);
     }
 
@@ -102,48 +94,51 @@ public class StartAI : MonoBehaviour {
         // ROTATE WHEEL
         Transform wheel = transform.FindChild("Wheel");
         float testangle = wheel.localEulerAngles.z + (Time.deltaTime * -axis_horiz * wheel_turn_speed);
-        Debug.Log("test: " + testangle.ToString());
 
-        wheel.Rotate(0,0,Time.deltaTime * -axis_horiz * wheel_turn_speed);
+        wheel.Rotate(0, 0, Time.deltaTime * -axis_horiz * wheel_turn_speed);
 
         float anglez = wheel.localEulerAngles.z;
 
         if (anglez >= 0 && anglez < 180)
         {
-            anglez = Mathf.Clamp(anglez,0,max_wheel_turn);
+            anglez = Mathf.Clamp(anglez, 0, max_wheel_turn);
         }
         else
         {
-            anglez = Mathf.Clamp(anglez,360-max_wheel_turn-1,360);
+            anglez = Mathf.Clamp(anglez, 360 - max_wheel_turn - 1, 360);
         }
 
-        wheel.localEulerAngles = new Vector3(0,0,anglez);
+        wheel.localEulerAngles = new Vector3(0, 0, anglez);
 
-       // CAR ROTATION
-
-        //transform.Rotate(Vector3.forward, -axis_horiz * turn_speed * Time.deltaTime);
-
-        // rotate car if moving
-        if (rb.velocity.x != 0  || rb.velocity.y != 0)
+        // CAR ROTATION
+        // IF MOVING
+        if (Mathf.Abs(rb.velocity.x) > EPSILON || Mathf.Abs(rb.velocity.y) > EPSILON)
         {
-            if (isPlayer)
+            Vector2 localvel = transform.InverseTransformDirection(rb.velocity);
+            // IF wheel local z BETWEEN 0 & 90
+            if (anglez >= 0 && anglez < 90)
             {
-                transform.Rotate(Vector3.forward, (wheel.localEulerAngles.z * Time.deltaTime));
+                transform.Rotate(Vector3.forward, anglez * Time.deltaTime * real_grip * Mathf.Sign(localvel.y) * turn_speed * (rb.velocity.magnitude / 60));
+            }
+            // ELSE ROTATE OTHER DIRECTION
+            else
+            {
+                transform.Rotate(Vector3.forward, (anglez - 360) * Time.deltaTime * real_grip * Mathf.Sign(localvel.y) * turn_speed * (rb.velocity.magnitude / 60));
             }
         }
-        
+
     }
 
     /// <summary>
     /// Called on 2D collision
     /// </summary>
     /// <param name="col">The collider</param>
-    void OnCollisionEnter2D (Collision2D col)
+    void OnCollisionEnter2D(Collision2D col)
     {
         if (col.gameObject.CompareTag("Hazard"))
         {
             this.accel_rate = this.accel_rate * (float)-1.5;
-            Invoke("return_default_speed",2);
+            Invoke("return_default_speed", 2);
         }
         else if (col.gameObject.CompareTag("Spill"))
         {
@@ -159,3 +154,4 @@ public class StartAI : MonoBehaviour {
         accel_rate = default_accel_rate;
     }
 }
+
