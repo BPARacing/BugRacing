@@ -11,8 +11,8 @@ public class StartAI : MonoBehaviour {
     public float default_max_speed;     // default max speed
     public float wheel_grip             // wheel grip -min 0  -max 1
     {
-        get { return this.wheel_grip; }
-        set { Mathf.Clamp(value, 0, 1); }
+        get { return this.real_grip; }
+        set { this.real_grip = Mathf.Clamp01(value); }
     }
     public float max_wheel_turn;        // maximum wheel angle
     public float wheel_turn_speed;      // wheel turn speed
@@ -22,12 +22,14 @@ public class StartAI : MonoBehaviour {
     private float accel_rate;           // REAL accel rate
     private float turn_speed;           // REAL turn speed
     private float max_speed;            // REAL max speed
+    private float real_grip;            // REAL grip
 
     private float axis_horiz = 0f;      // horizontal input
     private float axis_vert = 0f;       // vertical iput
     private GameObject exitObj;         // the gameobject of this car
     private Quaternion quat;            // the quaternion for turning
     private Rigidbody2D rb;             // this object's rigid body
+    private float EPSILON = 0.4f;
 
     /// <summary>
     /// Starts this instance.
@@ -37,6 +39,7 @@ public class StartAI : MonoBehaviour {
         accel_rate = default_accel_rate;
         turn_speed = default_turn_speed;
         max_speed = default_max_speed;
+        real_grip = wheel_grip;
 
         // set the exit point
         rb = GetComponent<Rigidbody2D>();
@@ -87,66 +90,48 @@ public class StartAI : MonoBehaviour {
     /// </summary>
     void motion()
     {
-        // MOVE the CAR forward
-        // accel_rate, axis_vert, wheel_grip
-        if (axis_vert != 0) { rb.AddForce(transform.up * accel_rate * axis_vert * wheel_grip); }
+        // MOVE CAR
+        if (axis_vert != 0) { rb.AddForce(transform.up * accel_rate * axis_vert * real_grip); }
 
-        // ENFORCE max_speed
-        // max_speed
+        // ENFORCE SPEED LIMIT
         if (rb.velocity.magnitude > max_speed)
         {
             rb.velocity = rb.velocity.normalized * max_speed;
         }
 
-        // get angle
-
-
         // ROTATE WHEEL
         Transform wheel = transform.FindChild("Wheel");
-        Debug.Log("Car quat: " + transform.eulerAngles + "\nWheel quat: " + wheel.eulerAngles.ToString());
-        //wheel.Rotate(Vector3.forward, -axis_horiz * wheel_turn_speed * Time.deltaTime);
-        Vector3 angle = wheel.localEulerAngles;
-        //between 0 and 50
-        angle.z = Mathf.Clamp(angle.z + (Time.deltaTime * -axis_horiz * wheel_turn_speed), 0, max_wheel_turn);
-        //between 360 and 310
+        float testangle = wheel.localEulerAngles.z + (Time.deltaTime * -axis_horiz * wheel_turn_speed);
+        Debug.Log("test: " + testangle.ToString());
 
-        //set the angle
-        wheel.localEulerAngles = angle;
+        wheel.Rotate(0,0,Time.deltaTime * -axis_horiz * wheel_turn_speed);
 
-        if (Mathf.Abs(wheel.localRotation.z) > 0.5)
+        float anglez = wheel.localEulerAngles.z;
+
+        if (anglez >= 0 && anglez < 180)
         {
-            //wheel.Rotate(Vector3.forward, new Quaternion(0,0,wheel.localRotation - max_wheel_turn));
+            anglez = Mathf.Clamp(anglez,0,max_wheel_turn);
         }
-        /*
-        if (Mathf.Abs(wheel.localRotation.z) > 0.5)
+        else
         {
-            if (wheel.localRotation.z > 0) //if positive then
-            {
-                wheel.rotation = new Quaternion(0,0, max_wheel_turn,0);
-            }
-            else
-            {
-                wheel.rotation = new Quaternion(0, 0, -max_wheel_turn, 0);
-            }
+            anglez = Mathf.Clamp(anglez,360-max_wheel_turn-1,360);
         }
-        */
+
+        wheel.localEulerAngles = new Vector3(0,0,anglez);
+
+       // CAR ROTATION
 
         //transform.Rotate(Vector3.forward, -axis_horiz * turn_speed * Time.deltaTime);
 
-        // rotate if moving
-        /*
+        // rotate car if moving
         if (rb.velocity.x != 0  || rb.velocity.y != 0)
         {
             if (isPlayer)
             {
-                transform.Rotate(Vector3.forward, -axis_horiz * turn_speed * Time.deltaTime);
-            }
-            else
-            {
-                transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.deltaTime * turn_speed);
+                transform.Rotate(Vector3.forward, (wheel.localEulerAngles.z * Time.deltaTime));
             }
         }
-        */
+        
     }
 
     /// <summary>
