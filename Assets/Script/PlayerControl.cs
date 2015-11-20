@@ -26,7 +26,7 @@ public class PlayerControl : MonoBehaviour
     private GameObject exitObj;         // the gameobject of this car
     private Quaternion quat;            // the quaternion for turning
     private Rigidbody2D rb;             // this object's rigid body
-    private float EPSILON = 0.4f;
+    public float EPSILON = 0.4f;
 
     /// <summary>
     /// Starts this instance.
@@ -142,6 +142,33 @@ public class PlayerControl : MonoBehaviour
     public void return_default_speed()
     {
         accel_rate = default_accel_rate;
+    }
+
+    // ####################
+    // ## DEBUG COMMANDS ##
+    // ####################
+    
+    public float ?getVar(string varname)
+    {
+        switch (varname)
+        {
+            case "accel_rate":
+                return accel_rate;
+            case "turn_speed":
+                return turn_speed;
+            case "max_speed":
+                return max_speed;
+            case "wheel_grip":
+                return wheel_grip;
+            case "max_wheel_turn":
+                return max_wheel_turn;
+            case "wheel_turn_speed":
+                return wheel_turn_speed;
+            case "EPSILON":
+                return EPSILON;
+            default:
+                return null;
+        }
     }
 }
 
