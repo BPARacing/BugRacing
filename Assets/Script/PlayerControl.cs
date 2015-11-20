@@ -5,18 +5,17 @@ public class PlayerControl : MonoBehaviour
 {
 
     // default behaviors
-    public float default_accel_rate;    // default accel rate
-    public float default_turn_speed;    // default turn speed
-    public float default_max_speed;     // default max speed
+    public float default_accel_rate;    // default accel rate : 260
+    public float default_turn_speed;    // default turn speed : 1
+    public float default_max_speed;     // default max speed : 400
     public float wheel_grip             // wheel grip -min 0  -max 1
     {
         get { return this.real_grip; }
         set { this.real_grip = Mathf.Clamp01(value); }
     }
-    public float max_wheel_turn;        // maximum wheel angle
-    public float wheel_turn_speed;      // wheel turn speed
+    public float max_wheel_turn;        // maximum wheel angle : 50
+    public float wheel_turn_speed;      // wheel turn speed : 60
 
-    private Vector2 exitpoint;          // exitpoint for the AI
     private float accel_rate;           // REAL accel rate
     private float turn_speed;           // REAL turn speed
     private float max_speed;            // REAL max speed
@@ -34,7 +33,7 @@ public class PlayerControl : MonoBehaviour
     /// </summary>
     void Start()
     {
-        // set the Interanl variables
+        // set the Internal variables
         accel_rate = default_accel_rate;
         turn_speed = default_turn_speed;
         max_speed = default_max_speed;
@@ -42,10 +41,6 @@ public class PlayerControl : MonoBehaviour
 
         // set the exit point
         rb = GetComponent<Rigidbody2D>();
-
-        // get goal point
-        exitObj = GameObject.FindGameObjectWithTag("Exit");
-        exitpoint = new Vector2(exitObj.transform.position.x, exitObj.transform.position.y);
     }
 
     /// <summary>
@@ -135,12 +130,7 @@ public class PlayerControl : MonoBehaviour
     /// <param name="col">The collider</param>
     void OnCollisionEnter2D(Collision2D col)
     {
-        if (col.gameObject.CompareTag("Hazard"))
-        {
-            this.accel_rate = this.accel_rate * (float)-1.5;
-            Invoke("return_default_speed", 2);
-        }
-        else if (col.gameObject.CompareTag("Spill"))
+        if (col.gameObject.CompareTag("Spill"))
         {
             wheel_grip = 0.3f;
         }
